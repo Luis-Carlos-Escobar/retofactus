@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
-use App\Models\User;
+use App\Filament\Resources\ClienteResource\Pages;
+use App\Filament\Resources\ClienteResource\RelationManagers;
+use App\Models\Cliente;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,30 +13,29 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class UserResource extends Resource
+class ClienteResource extends Resource
 {
-    protected static ?string $model = User::class;
-    protected static ?string $navigationGroup = 'Empleados';
-    protected static ?string $navigationLabel = 'Usuarios';
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $model = Cliente::class;
+    protected static ?string $navigationGroup = "Empleados";
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('nombre')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('email')
-                    ->email()
+                    ->maxLength(50),
+                Forms\Components\TextInput::make('documento')
                     ->required()
-                    ->maxLength(255),
-                Forms\Components\DateTimePicker::make('email_verified_at'),
-                Forms\Components\TextInput::make('password')
-                    ->password()
-                    ->hiddenOn('edit')
+                    ->maxLength(20),
+                Forms\Components\TextInput::make('telefono')
+                    ->tel()
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(15),
+                Forms\Components\TextInput::make('direccion')
+                    ->maxLength(100),
             ]);
     }
 
@@ -44,9 +43,13 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('nombre')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email')
+                Tables\Columns\TextColumn::make('documento')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('telefono')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('direccion')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -80,9 +83,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
+            'index' => Pages\ListClientes::route('/'),
+            'create' => Pages\CreateCliente::route('/create'),
+            'edit' => Pages\EditCliente::route('/{record}/edit'),
         ];
     }
 }
