@@ -24,9 +24,11 @@ class ModeloResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('marca_id')
-                    ->required()
-                    ->numeric(),
+                Forms\Components\Select::make('marca_id')
+                    ->label('Marca')
+                    ->relationship('marca', 'nombre')
+                    ->searchable()
+                    ->required(),
                 Forms\Components\TextInput::make('nombre')
                     ->required()
                     ->maxLength(50),
@@ -38,7 +40,8 @@ class ModeloResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('marca_id')
-                    ->numeric()
+                    ->label('Marca')
+                    ->getStateUsing(fn (Modelo $record) => $record->marca->nombre)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('nombre')
                     ->searchable(),

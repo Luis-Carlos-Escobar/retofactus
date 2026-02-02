@@ -23,18 +23,56 @@ class ProductoResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('tipo_id')
+                Forms\Components\Select::make('marca_id')
+                    ->label('Marca')
+                    ->relationship('marca', 'nombre')
+                    ->searchable()
                     ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('modelo_id')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('nombre')
+                            ->label('Nombre de la marca')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                    ]),
+                Forms\Components\Select::make('modelo_id')
+                    ->label('Modelo')
+                    ->relationship('modelo', 'nombre')
+                    ->searchable()
                     ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('pulgada_id')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('nombre')
+                            ->label('Nombre del modelo')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                    ])
+                    ->createOptionUsing(function (array $data, callable $get) {
+                        return \App\Models\Modelo::create([
+                            'nombre' => $data['nombre'],
+                            'marca_id' => $get('marca_id'),
+                        ])->getKey();
+                    }),
+                Forms\Components\Select::make('tipo_id')
+                    ->label('Tipo')
+                    ->relationship('tipo', 'nombre')
+                    ->searchable()
                     ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('marca_id')
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('nombre')
+                            ->label('Nombre del tipo')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                    ]),
+                Forms\Components\Select::make('pulgada_id')
+                    ->label('Pulgada')
+                    ->relationship('pulgada', 'medida')
+                    ->searchable()
                     ->required()
-                    ->numeric(),
+                    ->createOptionForm([
+                        Forms\Components\TextInput::make('Medida')
+                            ->label('Medida de la pulgada')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                    ]),
                 Forms\Components\TextInput::make('precio')
                     ->required()
                     ->numeric(),
@@ -52,17 +90,21 @@ class ProductoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('tipo_id')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('modelo_id')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('pulgada_id')
-                    ->numeric()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('marca_id')
-                    ->numeric()
+                    ->label('Marca')
+                    ->getStateUsing(fn (Producto $record) => $record->marca->nombre)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('modelo_id')
+                    ->label('Modelo')
+                    ->getStateUsing(fn (Producto $record) => $record->modelo->nombre)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('tipo_id')
+                    ->label('Tipo')
+                    ->getStateUsing(fn (Producto $record) => $record->tipo->nombre)
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('pulgada_id')
+                    ->label('Pulgada')
+                    ->getStateUsing(fn (Producto $record) => $record->pulgada->medida)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('precio')
                     ->numeric()
@@ -75,11 +117,11 @@ class ProductoResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: false),
             ])
             ->filters([
                 //
