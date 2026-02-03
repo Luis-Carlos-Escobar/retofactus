@@ -40,5 +40,13 @@ class Producto extends Model
         return $this->belongsTo(Pulgada::class);
     }
 
+    public function ventas()
+    {
+        return $this->hasMany(Venta::class);
+    }
 
+    public function detalleVentas()
+    {
+        return $this->hasMany(DetalleVenta::class);
+    }
 }

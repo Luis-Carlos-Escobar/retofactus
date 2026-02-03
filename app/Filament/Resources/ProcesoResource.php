@@ -107,8 +107,8 @@ class ProcesoResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('crearEvidencia')
-                    ->label('Evidencia')
-                    ->icon('heroicon-o-document-plus')
+                    ->label('Añadir evidencia')
+                    ->icon('heroicon-m-plus-circle')
                     ->color('success')
                     ->url(fn (Proceso $record) =>
                         EvidenciaResource::getUrl('create', [
@@ -116,9 +116,9 @@ class ProcesoResource extends Resource
                         ])
                     ),
                     Tables\Actions\Action::make('verEvidencias')
-                    ->label('Ver Evidencias')
-                    ->icon('heroicon-o-document')
-                    ->color('primary')
+                    ->label('Ver evidencias')
+                    ->icon('heroicon-o-bars-2')
+                    ->color('info')
                     ->url(fn (Proceso $record) =>
                         EvidenciaResource::getUrl('index', [
                             'proceso_id' => $record->id,

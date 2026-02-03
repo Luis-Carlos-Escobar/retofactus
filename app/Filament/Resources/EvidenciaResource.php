@@ -56,7 +56,7 @@ class EvidenciaResource extends Resource
                     ->extraImgAttributes([
                             'class' => 'cursor-pointer',
                         ])
-                    ->openUrlInNewTab(), // 👈 abre la imagen completa
+                    ->openUrlInNewTab(),
                 Tables\Columns\TextColumn::make('comentario')
                     ->limit(50),
                 Tables\Columns\TextColumn::make('created_at')
