@@ -49,4 +49,15 @@ class Producto extends Model
     {
         return $this->hasMany(DetalleVenta::class);
     }
+
+    public function getNombreCompletoAttribute()
+    {
+        $marca = $this->marca ? $this->marca->nombre : '';
+        $tipo = $this->tipo ? $this->tipo->nombre : '';
+        $modelo = $this->modelo ? $this->modelo->nombre : '';
+        $stock = $this->stock ? $this->stock : '';
+
+        return trim("$marca + $tipo + $modelo + Cantidad: $stock" ); // Combina todo en un string
+    }
+
 }

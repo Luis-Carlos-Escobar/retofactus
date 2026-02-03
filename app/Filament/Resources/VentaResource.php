@@ -2,18 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\VentaResource\Pages;
-use App\Filament\Resources\VentaResource\RelationManagers;
-use App\Models\Venta;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use App\Models\Venta;
+use App\Models\Producto;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Services\FactusService;
+use Filament\Resources\Resource;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\VentaResource\Pages;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\VentaResource\RelationManagers;
 
 
 class VentaResource extends Resource
@@ -46,82 +47,62 @@ class VentaResource extends Resource
                 ->schema([
 
                     Forms\Components\Repeater::make('detalles')
-                        ->relationship() // 👈 magia aquí
+                        ->relationship()
                         ->schema([
 
                             Forms\Components\Select::make('producto_id')
                                 ->label('Producto')
-                                ->relationship('producto', 'id')
+                                ->options(function () {
+                                    return Producto::all()->pluck('nombre_completo', 'id');
+                                })
                                 ->searchable()
                                 ->required()
-                                ->live(),
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
+                                    $producto = Producto::find($state);
+                                    if ($producto) {
+                                        $set('precio_unitario', $producto->precio);
+                                        $set('subtotal', $producto->precio * $get('cantidad', 1));
+                                    } else {
+                                        $set('precio_unitario', 0);
+                                        $set('subtotal', 0);
+                                    }
+                                }),
 
                             Forms\Components\TextInput::make('cantidad')
+                                ->label('Cantidad')
                                 ->numeric()
-                                ->default(1)
                                 ->required()
-                                ->live(),
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set, $get) {
+                                    $set('subtotal', $get('precio_unitario') * $state);
+                                }),
 
                             Forms\Components\TextInput::make('precio_unitario')
+                                ->label('Precio Unitario')
                                 ->numeric()
-                                ->required()
-                                ->live(),
+                                ->disabled(),
 
                             Forms\Components\TextInput::make('subtotal')
-                                ->disabled()
-                                ->dehydrated()
+                                ->label('Subtotal')
                                 ->numeric()
-                                ->afterStateHydrated(fn ($set, $get) =>
-                                    $set('subtotal', $get('cantidad') * $get('precio_unitario'))
-                                )
-                                ->afterStateUpdated(fn ($set, $get) =>
-                                    $set('subtotal', $get('cantidad') * $get('precio_unitario'))
-                                ),
-
+                                ->disabled()
+                                ->reactive(),
                         ])
                         ->columns(4)
-                        ->addActionLabel('➕ Agregar producto')
-                        ->defaultItems(1)
-                        ->live(),
-
-
+                        ->createItemButtonLabel('Agregar Producto'),
                     Forms\Components\TextInput::make('total')
-                        ->label('Total venta')
+                        ->label('Total Venta')
                         ->numeric()
-                        ->disabled()
-                        ->dehydrated()
-                        ->live()
-                        ->afterStateHydrated(function ($set, $get) {
-                            $total = collect($get('detalles'))
-                                ->sum(fn ($item) => $item['subtotal'] ?? 0);
-
-                            $set('total', $total);
-                        })
-                        ->afterStateUpdated(function ($set, $get) {
-                            $total = collect($get('detalles'))
-                                ->sum(fn ($item) => $item['subtotal'] ?? 0);
-
-                            $set('total', $total);
-                        }),
-
+                        ->disabled(),
                     Forms\Components\TextInput::make('pagado')
-                        ->numeric()
-                        ->default(0)
-                        ->live(),
-
+                        ->label('Pagado')
+                        ->numeric(),
                     Forms\Components\TextInput::make('restante')
-                        ->disabled()
-                        ->dehydrated()
+                        ->label('Restante')
                         ->numeric()
-                        ->afterStateHydrated(fn ($set, $get) =>
-                            $set('restante', $get('total') - $get('pagado'))
-                        )
-                        ->afterStateUpdated(fn ($set, $get) =>
-                            $set('restante', $get('total') - $get('pagado'))
-                        ),
-
+                        ->disabled(),
                 ]),
-
             ]);
     }
 

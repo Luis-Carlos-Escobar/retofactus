@@ -35,7 +35,7 @@ class Venta extends Model
         return [
             "customer" => [
                 "name" => $this->cliente->nombre,
-                
+
             ],
             "items" => $this->detalles->map(function($detalle) {
                 return [
