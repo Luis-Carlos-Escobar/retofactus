@@ -2,18 +2,18 @@
 
 namespace App\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Tables;
-use App\Models\Venta;
-use Filament\Forms\Form;
-use Filament\Tables\Table;
-use App\Services\FactusService;
-use Filament\Resources\Resource;
-use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\VentaResource\Pages;
+use App\Filament\Resources\VentaResource\RelationManagers;
+use App\Models\Venta;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\VentaResource\RelationManagers\DetallesRelationManager;
+use App\Services\FactusService;
+use Filament\Notifications\Notification;
 
 
 class VentaResource extends Resource
@@ -26,21 +26,102 @@ class VentaResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('cliente_id')
-                    ->label('Cliente')
-                    ->relationship('cliente', 'nombre')
-                    ->searchable()
-                    ->required(),
-                Forms\Components\DateTimePicker::make('fecha_venta')
-                    ->required(),
-                Forms\Components\TextInput::make('total')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('pagado')
-                    ->required()
-                    ->numeric(),
-                Forms\Components\TextInput::make('restante')
-                    ->numeric(),
+                Forms\Components\Section::make('Datos de la venta')
+                ->schema([
+
+                    Forms\Components\Select::make('cliente_id')
+                        ->label('Cliente')
+                        ->relationship('cliente', 'nombre')
+                        ->searchable()
+                        ->required(),
+
+                    Forms\Components\DateTimePicker::make('fecha_venta')
+                        ->default(now())
+                        ->required(),
+
+                ])->columns(2),
+
+
+            Forms\Components\Section::make('Productos')
+                ->schema([
+
+                    Forms\Components\Repeater::make('detalles')
+                        ->relationship() // 👈 magia aquí
+                        ->schema([
+
+                            Forms\Components\Select::make('producto_id')
+                                ->label('Producto')
+                                ->relationship('producto', 'id')
+                                ->searchable()
+                                ->required()
+                                ->live(),
+
+                            Forms\Components\TextInput::make('cantidad')
+                                ->numeric()
+                                ->default(1)
+                                ->required()
+                                ->live(),
+
+                            Forms\Components\TextInput::make('precio_unitario')
+                                ->numeric()
+                                ->required()
+                                ->live(),
+
+                            Forms\Components\TextInput::make('subtotal')
+                                ->disabled()
+                                ->dehydrated()
+                                ->numeric()
+                                ->afterStateHydrated(fn ($set, $get) =>
+                                    $set('subtotal', $get('cantidad') * $get('precio_unitario'))
+                                )
+                                ->afterStateUpdated(fn ($set, $get) =>
+                                    $set('subtotal', $get('cantidad') * $get('precio_unitario'))
+                                ),
+
+                        ])
+                        ->columns(4)
+                        ->addActionLabel('➕ Agregar producto')
+                        ->defaultItems(1)
+                        ->live(),
+
+
+                    Forms\Components\TextInput::make('total')
+                        ->label('Total venta')
+                        ->numeric()
+                        ->disabled()
+                        ->dehydrated()
+                        ->live()
+                        ->afterStateHydrated(function ($set, $get) {
+                            $total = collect($get('detalles'))
+                                ->sum(fn ($item) => $item['subtotal'] ?? 0);
+
+                            $set('total', $total);
+                        })
+                        ->afterStateUpdated(function ($set, $get) {
+                            $total = collect($get('detalles'))
+                                ->sum(fn ($item) => $item['subtotal'] ?? 0);
+
+                            $set('total', $total);
+                        }),
+
+                    Forms\Components\TextInput::make('pagado')
+                        ->numeric()
+                        ->default(0)
+                        ->live(),
+
+                    Forms\Components\TextInput::make('restante')
+                        ->disabled()
+                        ->dehydrated()
+                        ->numeric()
+                        ->afterStateHydrated(fn ($set, $get) =>
+                            $set('restante', $get('total') - $get('pagado'))
+                        )
+                        ->afterStateUpdated(fn ($set, $get) =>
+                            $set('restante', $get('total') - $get('pagado'))
+                        ),
+
+                ]),
+
             ]);
     }
 
@@ -49,6 +130,8 @@ class VentaResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('cliente_id')
+                    ->label('Cliente')
+                    ->getStateUsing(fn (Venta $record) => $record->cliente->nombre)
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('fecha_venta')
@@ -71,6 +154,14 @@ class VentaResource extends Resource
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('factus_id')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('cufe')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('estado_dian')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('pdf_url')
+                    ->searchable(),
             ])
             ->filters([
                 //
@@ -78,13 +169,13 @@ class VentaResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('facturar')
-                    ->label('Enviar a Factus')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('success')
+                ->label('Enviar a Factus')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('success')
 
-                    ->visible(fn ($record) => !$record->factus_id) // evita doble envío
+                ->visible(fn ($record) => !$record->factus_id) // evita doble envío
 
-                    ->action(function ($record) {
+                ->action(function ($record) {
 
                     try {
 
@@ -114,8 +205,7 @@ class VentaResource extends Resource
                             ->danger()
                             ->send();
                     }
-                }),
-
+                })
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -127,11 +217,9 @@ class VentaResource extends Resource
     public static function getRelations(): array
     {
         return [
-            
+            //
         ];
     }
-
-
 
     public static function getPages(): array
     {
