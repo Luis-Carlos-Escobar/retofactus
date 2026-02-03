@@ -156,14 +156,14 @@ class VentaResource extends Resource
 
                 ->visible(fn ($record) => !$record->factus_id) // evita doble envío
 
-                ->action(function ($record) {
+                ->action(function ($record, $livewire) {
 
                     try {
 
                         $factus = app(FactusService::class);
 
                         $response = $factus->crearFactura(
-                            $record->toFactusPayload()
+                            $record->FactusPagos()
                         );
 
                         $record->update([
@@ -186,7 +186,9 @@ class VentaResource extends Resource
                             ->danger()
                             ->send();
                     }
+
                 })
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

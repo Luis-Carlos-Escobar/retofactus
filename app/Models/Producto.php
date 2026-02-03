@@ -55,9 +55,8 @@ class Producto extends Model
         $marca = $this->marca ? $this->marca->nombre : '';
         $tipo = $this->tipo ? $this->tipo->nombre : '';
         $modelo = $this->modelo ? $this->modelo->nombre : '';
-        $stock = $this->stock ? $this->stock : '';
 
-        return trim("$marca + $tipo + $modelo + Cantidad: $stock" ); // Combina todo en un string
+        return trim("$marca + $tipo + $modelo " ); // Combina todo en un string
     }
 
 }

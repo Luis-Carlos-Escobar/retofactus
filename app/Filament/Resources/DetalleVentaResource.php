@@ -49,8 +49,10 @@ class DetalleVentaResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('producto_id')
-                    ->numeric()
-                    ->sortable(),
+                    ->label('Producto')
+                    ->getStateUsing(fn (DetalleVenta $record) => $record->producto->nombre_completo)
+                    ->sortable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('cantidad')
                     ->numeric()
                     ->sortable(),
