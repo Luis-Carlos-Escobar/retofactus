@@ -17,7 +17,7 @@ class TipoResource extends Resource
 {
     protected static ?string $model = Tipo::class;
     protected static ?string $navigationGroup = "Características";
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-arrow-small-right';
 
     public static function form(Form $form): Form
     {

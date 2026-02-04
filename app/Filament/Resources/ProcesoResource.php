@@ -17,7 +17,7 @@ class ProcesoResource extends Resource
 {
     protected static ?string $model = Proceso::class;
     protected static ?string $navigationGroup = "Gestión";
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-magnifying-glass';
 
     public static function form(Form $form): Form
     {
