@@ -2,17 +2,19 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\VentaResource\Pages;
-use App\Filament\Resources\VentaResource\RelationManagers;
+use Filament\Forms;
+use Filament\Tables;
 use App\Models\Venta;
 use App\Models\Producto;
-use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Illuminate\Support\Facades\Log;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\VentaResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\VentaResource\RelationManagers;
 
 class VentaResource extends Resource
 {
@@ -179,12 +181,97 @@ class VentaResource extends Resource
                     ->money('COP'),
                 Tables\Columns\TextColumn::make('restante')
                     ->money('COP'),
+                // En VentaResource.php - método table()
+
+            Tables\Columns\TextColumn::make('factus_numero')
+                ->label('N° Factura')
+                ->searchable()
+                ->toggleable()
+                ->sortable()
+                ->color(fn ($state): string => $state ? 'success' : 'gray')
+                ->formatStateUsing(fn ($state): string => $state ?? 'No generada'),
+
+            Tables\Columns\IconColumn::make('facturada')
+                ->label('Facturada')
+                ->boolean()
+                ->toggleable()
+                ->sortable(),
+
+            Tables\Columns\TextColumn::make('estado_dian')  // Columna existente
+                ->label('Estado DIAN')
+                ->badge()
+                ->color(fn ($state): string => match($state) {
+                    'ACEPTADA' => 'success',
+                    'RECHAZADA' => 'danger',
+                    'EN_PROCESO' => 'warning',
+                    default => 'gray',
+                })
+                ->toggleable(),
+
+            Tables\Columns\TextColumn::make('factus_fecha_generacion')
+                ->label('Fecha Factura')
+                ->dateTime()
+                ->toggleable(isToggledHiddenByDefault: true)
+                ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('generarFactura')
+                    ->label('Facturar')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->visible(fn (Venta $record): bool => !$record->facturada)
+                    ->action(function (Venta $record, Tables\Actions\Action $action) {
+                    try {
+                        // Deshabilitar el botón mientras se procesa
+                        $action->disabled();
+
+                        // Generar factura
+                        $resultado = $record->generarFacturaElectronica();
+
+                        if ($resultado['success']) {
+                            Notification::make()
+                                ->title('✅ Factura generada exitosamente')
+                                ->body('Número: ' . ($resultado['factura']['numero'] ?? 'N/A'))
+                                ->success()
+                                ->send();
+
+                            // Recargar la fila
+                            $action->success();
+                        } else {
+                            Notification::make()
+                                ->title('❌ Error al generar factura')
+                                ->body($resultado['error'] ?? 'Error desconocido')
+                                ->danger()
+                                ->send();
+
+                            $action->failure();
+                        }
+
+                    } catch (\Exception $e) {
+                        Log::error('Error generando factura', [
+                            'venta_id' => $record->id,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
+                        ]);
+
+                        Notification::make()
+                            ->title('❌ Error del sistema')
+                            ->body('Error: ' . $e->getMessage())
+                            ->danger()
+                            ->send();
+
+                        $action->failure();
+                    }
+                })
+                ->requiresConfirmation()
+                ->modalHeading('Generar Factura Electrónica')
+                ->modalDescription('¿Estás seguro de generar la factura electrónica para esta venta?')
+                ->modalSubmitActionLabel('Sí, generar factura')
+                ->after(fn () => sleep(2)), // Pequeña pausa para ver la notificación
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
