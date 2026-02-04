@@ -62,6 +62,9 @@ class ProcesoResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID Proceso')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('cliente_id')
                     ->label('Cliente')
                     ->getStateUsing(fn (Proceso $record) => $record->cliente->nombre)

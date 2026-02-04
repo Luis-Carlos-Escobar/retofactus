@@ -46,6 +46,7 @@ class EvidenciaResource extends Resource
                 Tables\Columns\TextColumn::make('proceso_id')
                     ->label('Proceso')
                     ->numeric()
+                    ->searchable()
                     ->sortable(),
                 Tables\Columns\ImageColumn::make('imagen')
                     ->disk('public')
